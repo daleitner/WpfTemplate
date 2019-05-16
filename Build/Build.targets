@@ -1,0 +1,187 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<PropertyGroup>
+		<buildversion>1.0.0</buildversion>
+		<CheckBuild>true</CheckBuild>
+	</PropertyGroup>
+
+	<Target Name="ReplaceTextAll">
+		<ItemGroup>
+			<AssemblyFiles Include="$(RootDir)\Source\**\*assemblyinfo.cs"/>
+			<AssemblyFiles Include="$(RootDir)\..\framework\**\*assemblyinfo.cs"/>
+		 </ItemGroup>
+		<Message Text="REPLACE ASSEMBLYFILEVERSION:>%(AssemblyFiles.Identity)" />
+
+		<ReplaceFileText
+			InputFilename="%(AssemblyFiles.Identity)"
+			OutputFilename="%(AssemblyFiles.Identity)"
+			MatchExpression="(\d+)\.(\d+)\.(\d+)"
+			ReplacementText="$(buildversion)"/>
+	</Target>
+
+	<UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+		<ParameterGroup>
+			<InputFilename ParameterType="System.String" Required="true" />
+			<OutputFilename ParameterType="System.String" Required="true" />
+			<MatchExpression ParameterType="System.String" Required="true" />
+			<ReplacementText ParameterType="System.String" Required="true" />
+		</ParameterGroup>
+		<Task>
+			<Reference Include="System.Core" />
+			<Using Namespace="System" />
+			<Using Namespace="System.IO" />
+			<Using Namespace="System.Text.RegularExpressions" />
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+					File.WriteAllText(
+						OutputFilename,
+						Regex.Replace(File.ReadAllText(InputFilename), MatchExpression, ReplacementText)
+					);
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>  
+  
+	<Target Name="Compile" DependsOnTargets="ReplaceTextAll" Condition="$(CheckBuild)=='true'">
+		<MSBuild Projects="$(RootDir)\Source\%projectname%.sln" Properties="Configuration=$(Configuration);Platform=Any CPU" BuildInParallel="True"/>
+	</Target>
+
+	<Target Name="_ConfItems">
+		<ItemGroup>
+			<Bin%projectname% Include="$(RootDir)\Source\%projectname%\bin\$(Configuration)\Bin\%projectname%.exe"/>
+			<Bin%projectname% Include="$(RootDir)\Source\%projectname%\bin\$(Configuration)\Bin\%projectname%.exe.config"/>
+			<Bin%projectname% Include="$(RootDir)\Source\%projectname%\bin\$(Configuration)\Bin\*.dll" />
+			
+			<BinCommon Include="$(RootDir)\Configuration\Common\System.Windows.Interactivity.dll"/>
+			<BinCommon Include="$(RootDir)\Configuration\Common\Microsoft.Practices.Prism.dll"/>
+		</ItemGroup>
+	</Target>
+	
+	<!-- The Conf* targets are used to configure other targets. Invoke one or more of those targets at the beginning. -->
+
+	<Target Name="ConfVisualStudio" DependsOnTargets="_ConfItems">
+		<PropertyGroup>
+			<TargetDir>$(RootDir)\Source\%projectname%\bin\$(Configuration)</TargetDir>
+			<ConfigurationDir>$(RootDir)\Configuration\Client\</ConfigurationDir>
+		</PropertyGroup>
+	</Target>
+
+	<Target Name="ConfTest" DependsOnTargets="_ConfItems">
+		<PropertyGroup>
+			<TargetDir>$(OutputDir)\Test</TargetDir>
+			<ConfigurationDir>$(RootDir)\Configuration\Client\</ConfigurationDir>
+		</PropertyGroup>
+	</Target>
+
+
+	<Target Name="ConfRelease" DependsOnTargets="_ConfItems">
+		<PropertyGroup>
+			<TargetDir>$(OutputDir)\Release</TargetDir>
+			<SignPath>$(TargetDir)\Bin\%projectname%.exe</SignPath>
+			<ConfigurationDir>$(RootDir)\Configuration\Client</ConfigurationDir>
+			<AdditionalBin>$(RootDir)\Configuration\Common\3rdParty\**</AdditionalBin>
+			<ZipFile>$(OutputDir)\%projectname%.zip</ZipFile>
+			<StorageFile>\\SRV01\Daten\Delivery\%projectname%\Release\%projectname%_$(buildversion)_$([System.DateTime]::Now.ToString("yyyy-MM-dd_HHmm")).zip</StorageFile>
+			<FtpDir>.\</FtpDir>
+		</PropertyGroup>
+	</Target>
+
+	<Target Name="CleanOutput">
+		<RemoveDir Directories="$(TargetDir)"/>
+	</Target>
+
+	<Target Name="CopyFromConfiguration">
+		<!-- Copy files from the Configuration directory. -->
+		<ItemGroup>
+			<AdditionalBinFiles Include="$(AdditionalBin)" />
+			<ConfigurationFiles Include="$(ConfigurationDir)\**\*" Exclude="$(ConfigurationDir)\Addins\*" />
+			<AddinFiles Include="$(ConfigurationDir)\Addins\$(Addins)" />
+		</ItemGroup>
+		<Copy SourceFiles="@(ConfigurationFiles)" DestinationFolder="$(TargetDir)\%(RecursiveDir)" SkipUnchangedFiles="True"/>
+	</Target>
+	
+	<Target Name="CopyToOutput" DependsOnTargets="CopyFromConfiguration">
+		<Copy SourceFiles="@(Bin%projectname%)" DestinationFolder="$(TargetDir)\Bin\%(RecursiveDir)" SkipUnchangedFiles="True"/>
+		<Copy SourceFiles="@(BinCommon)" DestinationFolder="$(TargetDir)\Bin\%(RecursiveDir)" SkipUnchangedFiles="True"/>
+		<Copy SourceFiles="@(AdditionalBinFiles)" DestinationFolder="$(TargetDir)\Bin\%(RecursiveDir)" SkipUnchangedFiles="True"/>
+	</Target>
+
+	<Target Name="WriteVersionFile">
+		<GetAssemblyIdentity AssemblyFiles="$(TargetDir)\Bin\%projectname%.exe">
+			<Output TaskParameter="Assemblies" ItemName="MyAssemblyIdentities"/>
+		</GetAssemblyIdentity>
+		<ItemGroup>
+			<VersionString Include="%projectname%"/>
+			<VersionString Include="----------------------------"/>
+			<VersionString Include='Date:			$([System.DateTime]::Now.ToString("yyyy.MM.dd HHmm"))'/>
+			<VersionString Include="Version:		%(MyAssemblyIdentities.Version)"/>
+		</ItemGroup>
+
+		<WriteLinesToFile File="$(TargetDir)\Version.txt"
+							Lines="@(VersionString)"
+							Overwrite="true"
+							Encoding="Unicode"/>
+	</Target>
+
+
+	<!-- The Output* targets cannot be chained with other Output* targets! They rely on targets defined above. -->
+
+	<!-- Visual Studio output-->
+	<Target Name="OutputVisualStudio" DependsOnTargets="ConfVisualStudio;CopyToOutput"/>
+	<!-- Target Name="OutputAddInEditorVisualStudio" DependsOnTargets="ConfAddInEditorVisualStudio;CopyToOutput"/ -->
+	
+	<!--%projectname% outputs-->
+	<Target Name="OutputRelease" DependsOnTargets="ConfRelease;CleanOutput;CopyToOutput;WriteVersionFile" />
+	<!-- Target Name="OutputAddinEditor" DependsOnTargets="ConfAddinEditor;CleanOutput;CopyToOutput"/ -->
+
+	<!-- Targets below can be executed after Output* tasks. -->
+	<Target Name="Sign">
+		<PropertyGroup>
+			<SignToolExe Condition="Exists('C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Bin\SignTool.exe')">C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Bin\SignTool.exe</SignToolExe>
+			<!-- location in BuildSrv -->
+			<SignToolExe Condition="Exists('C:\Program Files (x86)\Windows Kits\10\bin\x86\SignTool.exe')">C:\Program Files (x86)\Windows Kits\10\bin\x86\SignTool.exe</SignToolExe>
+			<!-- location in Win 10 -->
+			<SignToolExe Condition="Exists('C:\Program Files (x86)\Windows Kits\8.0\bin\x86\SignTool.exe')">C:\Program Files (x86)\Windows Kits\8.0\bin\x86\SignTool.exe</SignToolExe>
+			<!-- location in Win 8 with VS -->
+			<Sha1>ea5202480dff7d2cd0e0148efab3948381729f2b</Sha1>
+			<!-- this is the sha1 fingerprint of the certificate. may not contain spaces. must be changed for new certificate. -->
+			<TimestampUrl>http://timestamp.comodoca.com/authenticode</TimestampUrl>
+		</PropertyGroup>
+		<Error Condition="$(SignToolExe) == ''" Text="Cannot locate signtool.exe!" />
+		<Message Text="Signing requires the certificate to be installed into the certificate store of the Local Computer (Lokaler Computer)!" Importance="High" />
+		<Message Text="When failing check if the certificate is installed in the right certificate store, is still valid and if the used sha1 fingerprint is correct." Importance="High" />
+		<!-- note that signtool.exe uses the /sm flag, which specifies to look into the certificate store of the Local Computer and not that of the user -->
+		<Exec Command='"$(SignToolExe)" sign /v /sm /sha1 $(Sha1) /t $(TimestampUrl) "$(SignPath)"'/>
+	</Target>
+	
+	<Target Name="ZipOutput">
+		<Delete Files="$(TargetDir)\*.db" /> 
+		<ItemGroup>
+			<FilesToZip Include="$(TargetDir)\**\*"/>
+		</ItemGroup>
+		<MSBuild.ExtensionPack.Compression.Zip
+			TaskAction="Create"
+			RemoveRoot="$(TargetDir)"
+			CompressionLevel="BestCompression"
+			CompressFiles="@(FilesToZip)"
+			ZipFileName="$(ZipFile)"/>
+	</Target>
+
+	<Target Name="FtpUpload">
+		<PropertyGroup>
+			<FtpHost>ftp.software-cube.at</FtpHost>
+			<FtpPassword>buildenvironment2015</FtpPassword>
+			<FtpUserName>Build</FtpUserName>
+		</PropertyGroup>
+		<MSBuild.ExtensionPack.Communication.Ftp
+			TaskAction="UploadFiles"
+			Host="$(FtpHost)"
+			UserName="$(FtpUserName)"
+			UserPassword="$(FtpPassword)"
+			FileNames="$(ZipFile)"
+			RemoteDirectoryName="$(FtpDir)"/>
+	</Target>
+
+	<Target Name="SaveZipToStorage">
+		<Copy SourceFiles="$(ZipFile)" DestinationFiles="$(StorageFile)"/>
+	</Target>
+</Project>

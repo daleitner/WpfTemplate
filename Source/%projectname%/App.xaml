@@ -1,0 +1,16 @@
+﻿<Application x:Class="%projectname%.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:%projectname%"
+             xmlns:main="clr-namespace:%projectname%.Main"
+             StartupUri="Main/MainWindow.xaml">
+	<Application.Resources>
+		<ResourceDictionary x:Key="Dictionary">
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/SC.Base.WPF;component/Resources/BaseDictionary.xaml"/>
+				<ResourceDictionary Source="Resources/%projectname%Dictionary.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+			<main:MainViewModel x:Key="MainViewModel" />
+		</ResourceDictionary>
+	</Application.Resources>
+</Application>

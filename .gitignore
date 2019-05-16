@@ -1,0 +1,43 @@
+# Directory ready-made application is saved
+**/Output
+**/Help
+
+# Directories with generated test artifacts
+**/MSTest*
+**/Coverage*
+**/Source/TestResults
+TestResult.xml
+IntegrationTestFrameworkResult.xml
+IntegrationTestResult.xml
+
+# sqlite database
+*.db
+*.sqlite
+*.sqlite.backup
+*.db-journal
+*.sqlite-journal
+
+# Visual Studio artifacts
+**/Source/**/obj
+**/Source/**/bin
+*.suo
+*.user
+**/Source/.vs
+
+# Trace files from performance analysis
+*.trx
+
+# Temporary files from Office
+~*.*
+
+# Visual Studio Profiler files
+*.psess
+*.vsp
+*.vspx
+# Any kind of log file
+*.log
+
+# avoid approval files!
+*.received.txt
+*.received.png
+*.received.xml

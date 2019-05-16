@@ -1,0 +1,10 @@
+﻿<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Target Name="InstallPackages">
+		<ItemGroup>
+			<DirToDelete Include="$(ToolsDir)"/>
+		</ItemGroup>
+		<RemoveDir Directories="@(DirToDelete)" />
+		<Exec Command='nuget.exe update -self'/>
+		<Exec Command='nuget.exe install packages.config -ExcludeVersion -OutputDirectory $(ToolsDir)'/>
+	</Target>
+</Project>

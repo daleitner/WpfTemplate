@@ -1,0 +1,55 @@
+﻿<Window x:Class="SC.Base.WPF.Reporting.ExceptionDialogWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ig="http://schemas.infragistics.com/xaml"
+             xmlns:local="clr-namespace:SC.Base.WPF.Views"
+             mc:Ignorable="d" WindowStyle="None" BorderThickness="0" ResizeMode="CanResizeWithGrip" WindowStartupLocation="CenterScreen"
+             Height="600" Width="800" d:DesignHeight="655" d:DesignWidth="800">
+	<Grid Margin="0,0,10,10">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="75" />
+			<RowDefinition Height="{Binding RowHeight}" />
+			<RowDefinition Height="Auto" />
+		</Grid.RowDefinitions>
+		<Grid Grid.Row="0">
+			<Image Height="51" HorizontalAlignment="Left" Margin="12,12,0,0" Name="Image1" Stretch="Fill" VerticalAlignment="Top" Width="51" Source="pack://application:,,,/SC.Base.WPF;component/Resources/Exclamation64.png" />
+			<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Hidden" Margin="69,12,12,12">
+				<Label Margin="0" Name="LabelHeader" VerticalAlignment="Top" FontSize="16" VerticalContentAlignment ="Center" MouseLeftButtonDown="labelHeader_MouseLeftButtonDown">
+					<TextBlock Text="{Binding ExceptionMessage}" TextWrapping="Wrap" Margin="0" />
+				</Label>
+			</ScrollViewer>
+		</Grid>
+		<Grid Grid.Row="1" >
+			<Label Content="Inner exceptions" Height="30" HorizontalAlignment="Left" Margin="12,5,0,0" Name="Label1" VerticalAlignment="Top" FontWeight="Bold" FontSize="16" />
+			<local:CustXamDataTree x:Name="XamDataTree" ItemsSource="{Binding Path=RootExceptionList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding Path=SelectedRootException, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="12,40,12,0" Height="125" VerticalAlignment="Top" Grid.Row="1">
+				<ig:XamDataTree.GlobalNodeLayouts>
+					<ig:NodeLayout Key="GroupLayout" TargetTypeName="ExceptionViewModel" DisplayMemberPath="Name">
+					</ig:NodeLayout>
+				</ig:XamDataTree.GlobalNodeLayouts>
+			</local:CustXamDataTree>
+			<TabControl Margin="12,170,12,0" Name="TabControl1">
+				<TabItem Header="Properties" Name="TabItem1">
+					<Grid>
+						<ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+							<ig:XamPropertyGrid SelectedObject="{Binding Path=ExceptionProps, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></ig:XamPropertyGrid>
+						</ScrollViewer>
+					</Grid>
+				</TabItem>
+				<TabItem Header="Stacktrace" Name="TabItem2">
+					<Grid>
+						<ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+							<TextBox Text="{Binding Path=StackTrace, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+						</ScrollViewer>
+					</Grid>
+				</TabItem>
+			</TabControl>
+		</Grid>
+		<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2" Margin="0,10,0,0">
+			<Button Content="Clipboard" Command="{Binding Path=CopyClipboardCommand}" HorizontalAlignment="Left" Name="ButtonClipboard" VerticalAlignment="Bottom" Margin="0,0,5,0" Width="100"/>
+			<Button Command="{Binding Path=ExpandCommand}" Content="Details" HorizontalAlignment="Left" Name="ButtonDetails" VerticalAlignment="Bottom" Margin="0,0,5,0" Width="100" />
+			<Button Content="Close" Command="{Binding Path=CloseCommand}" Name="ButtonClose" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="100" />
+		</StackPanel>
+	</Grid>
+</Window>

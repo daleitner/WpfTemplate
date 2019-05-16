@@ -1,0 +1,53 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<PropertyGroup>
+		<NUnitExe>$(ToolsDir)\NUnit.Console\tools\nunit3-console.exe</NUnitExe>
+	</PropertyGroup>
+
+	<Target Name="UnitTest">
+		<ItemGroup>
+			<TestDll Include="$(RootDir)\Source\%unittestproject%\bin\$(Configuration)\%unittestproject%.dll"/>
+		</ItemGroup>
+		<PropertyGroup>
+			<NUnitTestResult>TestResult.xml</NUnitTestResult>
+
+			<!-- Generate a string like '"path/this.dll" "path/another.dll"': -->
+			<NUnitDllArgs>@(TestDll->'"%(FullPath)"', ' ')</NUnitDllArgs>
+
+			<!-- x86: Due to a x86 dependency at least one of the projects we need to force NUnit running in x86 mode. -->
+			<!-- format=nunit2: Currently we cannot use the NUnit3 result file format, so we specify to use the old NUnit2 format. -->
+			<NUnitOtherArgs>--x86 --work="$(RootDir)" --result=$(NUnitTestResult);format=nunit3 --timeout=2000 --agents=1</NUnitOtherArgs>
+		</PropertyGroup>
+
+		<!-- Clean up from previous run: -->
+		<Delete Files="$(RootDir)\$(NUnitTestResult)"/>
+
+		<Exec Command='"$(NUnitExe)" $(NUnitDllArgs) $(NUnitOtherArgs) $(NUnitWhereArg)'/>
+	</Target>
+
+	<Target Name="IntegrationTest">
+		<ItemGroup>
+			<TestDll Include="$(RootDir)\Source\%integrationtestproject%\bin\$(Configuration)\%integrationtestproject%.dll"/>
+		</ItemGroup>
+		<PropertyGroup>
+			<NUnitTestResult>IntegrationTestResult.xml</NUnitTestResult>
+
+			<!-- Generate a string like '"path/this.dll" "path/another.dll"': -->
+			<NUnitDllArgs>@(TestDll->'"%(FullPath)"', ' ')</NUnitDllArgs>
+
+			<!-- x86: Due to a x86 dependency at least one of the projects we need to force NUnit running in x86 mode. -->
+			<!-- format=nunit2: Currently we cannot use the NUnit3 result file format, so we specify to use the old NUnit2 format. -->
+			<NUnitOtherArgs>--x86 --work="$(RootDir)" --result=$(NUnitTestResult);format=nunit2 --timeout=20000</NUnitOtherArgs>
+		</PropertyGroup>
+
+		<!-- Clean up from previous run: -->
+		<Delete Files="$(RootDir)\$(NUnitTestResult)"/>
+
+		<Exec Command='"$(NUnitExe)" $(NUnitDllArgs) $(NUnitOtherArgs) $(NUnitWhereArg)'/>
+	</Target>
+
+	<Target Name="SetupTestOnBuildServer">
+		<PropertyGroup>
+			<NUnitWhereArg>--where "cat != ExcludeFromBuildServer"</NUnitWhereArg>
+		</PropertyGroup>
+	</Target>
+</Project>

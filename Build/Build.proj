@@ -1,0 +1,23 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="ShowStatus;Targets">
+	<!-- Common properties -->
+	<PropertyGroup>
+		<RootDir>$(MSBuildProjectDirectory)\..</RootDir>
+		<OutputDir>$(RootDir)\Output</OutputDir>
+		<ToolsDir>$(RootDir)\Build\Tools</ToolsDir>
+		<ExtensionPackTargetPath>$(ToolsDir)\MSBuild.Extension.Pack\build\net40\MSBuild.Extension.Pack.targets</ExtensionPackTargetPath>
+		<Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+	</PropertyGroup>
+
+	<Target Name="ShowStatus">
+		<Message Condition="Exists($(ExtensionPackTargetPath))" Text="MSBuild.Extension.Pack is installed." />
+		<Warning Condition="!Exists($(ExtensionPackTargetPath))" Text="Missing file $(ExtensionPackTargetPath) indicates that MSBuild.Extension.Pack is missing! Use target InstallPackages to install." />
+	</Target>
+
+	<!-- Imports -->
+	<Import Condition="Exists($(ExtensionPackTargetPath))" Project="$(ExtensionPackTargetPath)" />
+	<Import Project="ListAll.targets"/>
+	<Import Project="Infrastructure.targets"/>
+	<Import Project="Build.targets"/>
+	<Import Project="Test.targets"/>
+	<Import Project="Ci.targets"/>
+</Project>

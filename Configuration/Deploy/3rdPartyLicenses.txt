@@ -1,0 +1,4 @@
+3rd party licenses
+
+Befehl: Get-Package | Select-Object -unique Id,Version,LicenseUrl
+NuGet Packages

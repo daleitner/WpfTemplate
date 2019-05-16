@@ -1,0 +1,6 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Target Name="CiCompileTest" DependsOnTargets="CleanOutput;Compile;SetupTestOnBuildServer;UnitTest"/>
+	<Target Name="CiIntegrationTest" DependsOnTargets="CleanOutput;Compile;SetupTestOnBuildServer;IntegrationTest"/>
+	<Target Name="Ci%projectname%Release" Condition="$(CheckBuild)=='true'" DependsOnTargets="CleanOutput;Compile;OutputRelease;Sign;ZipOutput;SaveZipToStorage"/>
+	<Target Name="Ci%projectname%ReleaseToFtp" Condition="$(CheckBuild)=='true'" DependsOnTargets="CleanOutput;Compile;OutputRelease;Sign;ZipOutput;SaveZipToStorage;FtpUpload"/>
+</Project>

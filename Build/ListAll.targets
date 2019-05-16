@@ -1,0 +1,56 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<!-- Original Source: http://stackoverflow.com/questions/2618201/is-there-a-way-to-list-all-the-build-targets-available-in-a-build-file -->
+	<UsingTask TaskName="GetAllTargets"
+			TaskFactory="CodeTaskFactory"
+			AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll" >
+		<ParameterGroup>
+			<ProjectFile ParameterType="System.String" Required="true"/>
+			<TargetsOut ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
+		</ParameterGroup>
+		<Task>
+			<Reference Include="System.Xml"/>
+			<Reference Include="Microsoft.Build"/>
+			<Reference Include="Microsoft.Build.Framework"/>
+			<Using Namespace="Microsoft.Build.Evaluation"/>
+			<Using Namespace="Microsoft.Build.Execution"/>
+			<Using Namespace="Microsoft.Build.Utilities"/>
+			<Using Namespace="Microsoft.Build.Framework"/>
+			<Code Type="Fragment" Language="cs">
+			  <![CDATA[
+				var project = new Project(ProjectFile);
+
+				var taskItems = new List<ITaskItem>(project.Targets.Count);
+				foreach (KeyValuePair<string, ProjectTargetInstance> kvp in project.Targets)
+				{
+				  var target = kvp.Value;
+				  var metadata = new Dictionary<string, string>
+								{
+									{"FileLocation", Path.GetFileName(target.Location.File)},
+									{"Line", target.Location.Line.ToString()},
+									{"DependsOnTargets", target.DependsOnTargets}
+								};
+				  taskItems.Add(new TaskItem(kvp.Key, metadata));
+				}
+				TargetsOut = taskItems
+					.OrderBy(t => t.GetMetadata("FileLocation"))
+					.ThenBy(t => t.GetMetadata("Identity"))
+					.ToArray();
+			  ]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<Target Name="Targets">
+		<GetAllTargets ProjectFile="$(MSBuildProjectFile)">
+			<Output ItemName="TargetItems" TaskParameter="TargetsOut"/>  
+		</GetAllTargets>
+		<Message Text="%(TargetItems.FileLocation) %(TargetItems.Identity)"/>
+	</Target>
+
+	<Target Name="TargetsDetails">
+		<GetAllTargets ProjectFile="$(MSBuildProjectFile)">
+			<Output ItemName="TargetItems" TaskParameter="TargetsOut"/>
+		</GetAllTargets>
+		<Message Text="%(TargetItems.FileLocation) %(TargetItems.Identity) (%(TargetItems.Line)) %(TargetItems.DependsOnTargets)"/>
+	</Target>
+</Project>
